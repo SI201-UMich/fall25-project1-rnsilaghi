@@ -24,8 +24,19 @@ def load_data(filename):
         
 # headers, random_row, num_rows = load_data('crop_yield.csv')
 
-def region_with_highest_ytp_hectare_for_wheat():
+def region_with_highest_ytp_hectare_for_wheat(filename):
+    #use the region, yield ton per hectare, and crop columns
     pass
-def fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare():
+
+def fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(filename):
+    #use the fertilizer_used, yield ton per hectare, and days_to_harvest columns 
+    pass
+
+def write_summary_to_txt(filename, summary_text):
+    with open(filename, 'w') as f:
+        f.write(summary_text)
+
+def main():
+    #load_data('crop_yield.csv')
     pass
 
