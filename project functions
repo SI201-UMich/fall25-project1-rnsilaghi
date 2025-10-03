@@ -1,0 +1,25 @@
+#name: Robert Silaghi
+#student ID: 8712 5192
+#email: silaghi@umich.edu
+#collaborators:
+
+import unittest
+
+def load_data(filename):
+    with open(filename, 'r') as fhand:
+        file_reader = fhand.readlines()
+        
+        headers = file_reader[0].rstrip()
+        header_list = headers.split(",")
+
+        a_row = file_reader[1]
+        a_row.rstrip()
+
+        count = 0
+        for rows in file_reader[1:]:
+            rows = rows.rstrip()
+            count += 1
+        
+        return header_list, a_row, count
+        
+# headers, random_row, num_rows = load_data('crop_yield.csv')
