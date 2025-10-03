@@ -23,3 +23,9 @@ def load_data(filename):
         return header_list, a_row, count
         
 # headers, random_row, num_rows = load_data('crop_yield.csv')
+
+def region_with_highest_ytp_hectare_for_wheat():
+    pass
+def fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare():
+    pass
+
