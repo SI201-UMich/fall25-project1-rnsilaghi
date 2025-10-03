@@ -12,6 +12,15 @@ def load_data(filename):
         headers = file_reader[0].rstrip()
         header_list = headers.split(",")
 
+        data_list = []
+        for line in file_reader[1:]:
+            values = line.rstrip().split(',')
+            paired = zip(header_list, values)
+            row_dict = {}
+            for header, value in paired:
+                row_dict[header] = value
+            data_list.append(row_dict)
+
         a_row = file_reader[1]
         a_row.rstrip()
 
@@ -20,9 +29,7 @@ def load_data(filename):
             rows = rows.rstrip()
             count += 1
         
-        return header_list, a_row, count
-        
-# headers, random_row, num_rows = load_data('crop_yield.csv')
+        return header_list, data_list, a_row, count
 
 def region_with_highest_ytp_hectare_for_wheat(filename):
     #use the region, yield ton per hectare, and crop columns
