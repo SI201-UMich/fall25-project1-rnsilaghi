@@ -6,44 +6,59 @@
 import unittest
 import os
 
+
 def load_data(filename):
     with open(filename, 'r') as fhand:
         file_reader = fhand.readlines()
-        
+
+        if not file_reader:
+            return [], [], "", 0
+
         headers = file_reader[0].rstrip()
         header_list = headers.split(",")
 
         data_list = []
         for line in file_reader[1:]:
             values = line.rstrip().split(',')
-            paired = zip(header_list, values)
             row_dict = {}
-            for header, value in paired:
-                row_dict[header] = value
+            for header, value in zip(header_list, values):
+                if header in ["Yield_tons_per_hectare", "Days_to_Harvest"]:
+                    try:
+                        row_dict[header] = float(value)
+                    except:
+                        row_dict[header] = None
+                else:
+                    row_dict[header] = value
             data_list.append(row_dict)
 
-        a_row = file_reader[1]
-        a_row.rstrip()
+        if len(file_reader) > 1:
+            a_row = file_reader[1].rstrip() 
+        else:
+            a_row = ""
+        count = len(file_reader) - 1
 
-        count = 0
-        for rows in file_reader[1:]:
-            rows = rows.rstrip()
-            count += 1
-        
         return header_list, data_list, a_row, count
+
 
 def region_with_highest_ytp_hectare_for_wheat(data_list):
     max_ytp_wheat_region = None
-    max_ytp_wheat = -float('inf')  
+    max_ytp_wheat = -float('inf')
+
     for line in data_list:
-        if line.get('Crop') == 'Wheat' and 'Yield_tons_per_hectare' in line:
+        crop = line.get("Crop")
+        ytp_value = line.get("Yield_tons_per_hectare")
+
+        if crop == "Wheat" and ytp_value is not None:
             try:
-                ytp = float(line['Yield_tons_per_hectare'])
+                ytp = float(ytp_value)
                 if ytp > max_ytp_wheat:
                     max_ytp_wheat = ytp
-                    max_ytp_wheat_region = line.get('Region')
+                    max_ytp_wheat_region = line.get("Region")
             except:
                 continue
+
+    if max_ytp_wheat == -float('inf'):
+        return None
     return max_ytp_wheat_region
 
 
@@ -52,28 +67,34 @@ def fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data_list):
     without_fert_yields = []
 
     for row in data_list:
-        if 'Fertilizer_Used' in row and 'Yield_tons_per_hectare' in row:
-            try:
-                ytp = float(row['Yield_tons_per_hectare'])
-                fert_used = str(row['Fertilizer_Used']).strip().lower() == 'true'
-                if fert_used:
-                    with_fert_yields.append(ytp)
-                else:
-                    without_fert_yields.append(ytp)
-            except:
-                continue
+        ytp_value = row.get("Yield_tons_per_hectare")
+        fert_value = row.get("Fertilizer_Used")
+
+        if ytp_value is None or fert_value is None:
+            continue
+
+        try:
+            ytp = float(ytp_value)
+            fert_used = str(fert_value).strip().lower() == "true"
+
+            if fert_used:
+                with_fert_yields.append(ytp)
+            else:
+                without_fert_yields.append(ytp)
+        except:
+            continue
 
     result = {}
 
     if with_fert_yields:
-        result['With_Fert'] = round(sum(with_fert_yields) / len(with_fert_yields), 4)
+        result["With_Fert"] = round(sum(with_fert_yields) / len(with_fert_yields), 4)
     else:
-        result['With_Fert'] = None
+        result["With_Fert"] = None
 
     if without_fert_yields:
-        result['Without_Fert'] = round(sum(without_fert_yields) / len(without_fert_yields), 4)
+        result["Without_Fert"] = round(sum(without_fert_yields) / len(without_fert_yields), 4)
     else:
-        result['Without_Fert'] = None
+        result["Without_Fert"] = None
 
     return result
 
@@ -82,186 +103,217 @@ def write_summary_to_txt(filename, summary_text):
     with open(filename, 'w') as f:
         f.write(summary_text)
 
+
 def main():
-    header_list, data_list, row, count = load_data("crop_yield.csv")
+    headers, data_list, a_row, count = load_data("crop_yield.csv")
+
     highest_region = region_with_highest_ytp_hectare_for_wheat(data_list)
     fert_impact = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data_list)
+
     summary_text = f"Highest Wheat Yield Region: {highest_region}\nFertilizer Impact: {fert_impact}"
     write_summary_to_txt("crop_analysis.txt", summary_text)
-    
+
+
 if __name__ == "__main__":
     main()
-
+    
 
 #Test Cases
-class TestCropFunctions(unittest.TestCase):
+
+class TestLoadData(unittest.TestCase):
+
     def setUp(self):
-        self.sample_data = [
-            {"Region": "North", "Crop": "Wheat", "Yield_tons_per_hectare": "5.2", "Fertilizer_Used": "True", "Days_to_Harvest": "100"},
-            {"Region": "South", "Crop": "Wheat", "Yield_tons_per_hectare": "7.1", "Fertilizer_Used": "False", "Days_to_Harvest": "120"},
-            {"Region": "East", "Crop": "Rice", "Yield_tons_per_hectare": "4.0", "Fertilizer_Used": "True", "Days_to_Harvest": "90"},
-            {"Region": "West", "Crop": "Wheat", "Yield_tons_per_hectare": "7.1", "Fertilizer_Used": "True", "Days_to_Harvest": "95"},
-            {"Region": "South", "Crop": "Barley", "Yield_tons_per_hectare": "3.5", "Fertilizer_Used": "False", "Days_to_Harvest": "80"},
-        ]
+        self.test_csv = "test_data.csv"
 
-    #load_data --> tests
-    def test_load_data_normal(self):
-        headers, data_list, a_row, count = ["Region","Crop","Yield_tons_per_hectare"], [{"Region":"North","Crop":"Wheat","Yield_tons_per_hectare":"5.2"}], "North,Wheat,5.2", 1
-        self.assertEqual(count, 1)
-        self.assertEqual(headers, ["Region","Crop","Yield_tons_per_hectare"])
+    def tearDown(self):
+        if os.path.exists(self.test_csv):
+            os.remove(self.test_csv)
 
-    def test_load_data_normal_multiple_rows(self):
-        headers, data_list, a_row, count = ["Region","Crop"], [{"Region":"North","Crop":"Wheat"},{"Region":"South","Crop":"Rice"}], "North,Wheat", 2
+    def test_load_data_general_1(self):
+        with open(self.test_csv, 'w') as f:
+            f.write("Crop,Yield_tons_per_hectare,Region\nWheat,3.5,North\nCorn,5.0,South")
+        headers, data_list, a_row, count = load_data(self.test_csv)
+        self.assertEqual(headers, ["Crop", "Yield_tons_per_hectare", "Region"])
         self.assertEqual(count, 2)
-        self.assertEqual(len(data_list), 2)
+
+    def test_load_data_general_2(self):
+        with open(self.test_csv, 'w') as f:
+            f.write("Name,Score\nAlice,90\nBob,85")
+        headers, data_list, a_row, count = load_data(self.test_csv)
+        self.assertEqual(headers, ["Name", "Score"])
+        self.assertEqual(data_list[0]["Name"], "Alice")
 
     def test_load_data_edge_empty_file(self):
-        headers, data_list, a_row, count = [], [], "", 0
-        self.assertEqual(count, 0)
+        with open(self.test_csv, 'w') as f:
+            f.write("")
+        headers, data_list, a_row, count = load_data(self.test_csv)
         self.assertEqual(headers, [])
-
-    def test_load_data_edge_missing_header(self):
-        headers, data_list, a_row, count = [], [], "", 0
-        self.assertEqual(len(headers), 0)
+        self.assertEqual(data_list, [])
+        self.assertEqual(a_row, "")
         self.assertEqual(count, 0)
 
-    #region_with_highest_ytp_hectare_for_wheat --> tests
-    def test_region_highest_wheat_normal(self):
-        result = region_with_highest_ytp_hectare_for_wheat(self.sample_data)
-        self.assertIn(result, ["South", "West"])
+    def test_load_data_edge_only_headers(self):
+        with open(self.test_csv, 'w') as f:
+            f.write("Crop,Yield_tons_per_hectare,Region\n")
+        headers, data_list, a_row, count = load_data(self.test_csv)
+        self.assertEqual(headers, ["Crop", "Yield_tons_per_hectare", "Region"])
+        self.assertEqual(data_list, [])
+        self.assertEqual(a_row, "")
+        self.assertEqual(count, 0)
 
-    def test_region_highest_wheat_normal_tie(self):
-        tie_data = [
-            {"Region": "North", "Crop": "Wheat", "Yield_tons_per_hectare": "5.0"},
-            {"Region": "South", "Crop": "Wheat", "Yield_tons_per_hectare": "5.0"}
+
+class TestRegionWithHighestYield(unittest.TestCase):
+
+    def test_general_1(self):
+        data = [
+            {"Crop": "Wheat", "Yield_tons_per_hectare": "3.5", "Region": "North"},
+            {"Crop": "Wheat", "Yield_tons_per_hectare": "4.2", "Region": "South"},
+            {"Crop": "Corn", "Yield_tons_per_hectare": "5.0", "Region": "East"}
         ]
-        result = region_with_highest_ytp_hectare_for_wheat(tie_data)
-        self.assertIn(result, ["North", "South"])
+        self.assertEqual(region_with_highest_ytp_hectare_for_wheat(data), "South")
 
-    def test_region_highest_wheat_no_wheat(self):
-        data_no_wheat = [{"Region":"East","Crop":"Rice","Yield_tons_per_hectare":"4.0"}]
-        result = region_with_highest_ytp_hectare_for_wheat(data_no_wheat)
-        self.assertIsNone(result)
+    def test_general_2(self):
+        data = [
+            {"Crop": "Wheat", "Yield_tons_per_hectare": "2.0", "Region": "West"},
+            {"Crop": "Wheat", "Yield_tons_per_hectare": "2.5", "Region": "East"}
+        ]
+        self.assertEqual(region_with_highest_ytp_hectare_for_wheat(data), "East")
 
-    def test_region_highest_wheat_missing_yield(self):
-        data_missing_yield = [{"Region":"North","Crop":"Wheat"}]
-        result = region_with_highest_ytp_hectare_for_wheat(data_missing_yield)
-        self.assertIsNone(result)
+    def test_edge_1(self):
+        data = [
+            {"Crop": "Corn", "Yield_tons_per_hectare": "5.0", "Region": "North"}
+        ]
+        self.assertIsNone(region_with_highest_ytp_hectare_for_wheat(data))
 
-    #fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare --> tests
-    def test_fert_impact_normal(self):
-        result = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(self.sample_data)
-        self.assertAlmostEqual(result['With_Fert'], 6.4333, places=4)
-        self.assertAlmostEqual(result['Without_Fert'], 5.3, places=4)
+    def test_edge_2(self):
+        data = [
+            {"Crop": "Wheat", "Yield_tons_per_hectare": None, "Region": "South"}
+        ]
+        self.assertIsNone(region_with_highest_ytp_hectare_for_wheat(data))
 
-    def test_fert_impact_normal_all_false(self):
-        data_all_false = [{"Fertilizer_Used":"False","Yield_tons_per_hectare":"4.0"}]
-        result = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data_all_false)
-        self.assertIsNone(result['With_Fert'])
-        self.assertEqual(result['Without_Fert'], 4.0)
 
-    def test_fert_impact_edge_empty_list(self):
-        result = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare([])
-        self.assertIsNone(result['With_Fert'])
-        self.assertIsNone(result['Without_Fert'])
+class TestFertilizerImpact(unittest.TestCase):
 
-    def test_fert_impact_edge_missing_columns(self):
-        data_missing = [{"SomeKey":"Value"}]
-        result = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data_missing)
-        self.assertIsNone(result['With_Fert'])
-        self.assertIsNone(result['Without_Fert'])
+    def test_general_1(self):
+        data = [
+            {"Yield_tons_per_hectare": "3.0", "Fertilizer_Used": "True"},
+            {"Yield_tons_per_hectare": "2.0", "Fertilizer_Used": "False"}
+        ]
+        result = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data)
+        self.assertEqual(result["With_Fert"], 3.0)
+        self.assertEqual(result["Without_Fert"], 2.0)
 
-    #write_summary_to_txt --> tests
-    def test_write_summary_normal(self):
-        filename = "test_summary.txt"
-        text = "Test summary content"
-        write_summary_to_txt(filename, text)
-        self.assertTrue(os.path.exists(filename))
+    def test_general_2(self):
+        data = [
+            {"Yield_tons_per_hectare": "4.0", "Fertilizer_Used": "True"},
+            {"Yield_tons_per_hectare": "2.0", "Fertilizer_Used": "False"},
+            {"Yield_tons_per_hectare": "3.0", "Fertilizer_Used": "False"}
+        ]
+        result = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data)
+        self.assertEqual(result["With_Fert"], 4.0)
+        self.assertEqual(result["Without_Fert"], 2.5)
+
+    def test_edge_1(self):
+        data = [
+            {"Yield_tons_per_hectare": "3.0", "Fertilizer_Used": "True"},
+            {"Yield_tons_per_hectare": None, "Fertilizer_Used": "False"}
+        ]
+        result = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data)
+        self.assertEqual(result["With_Fert"], 3.0)
+        self.assertIsNone(result["Without_Fert"])
+
+    def test_edge_2(self):
+        data = []
+        result = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data)
+        self.assertIsNone(result["With_Fert"])
+        self.assertIsNone(result["Without_Fert"])
+
+
+class TestWriteSummary(unittest.TestCase):
+
+    def test_general_1(self):
+        filename = "test_summary_1.txt"
+        content = "This is a test summary."
+        write_summary_to_txt(filename, content)
         with open(filename, 'r') as f:
-            content = f.read()
-        self.assertEqual(content, text)
+            self.assertEqual(f.read(), content)
         os.remove(filename)
 
-    def test_write_summary_normal_multiline(self):
-        filename = "test_summary_multi.txt"
-        text = "Line1\nLine2\nLine3"
-        write_summary_to_txt(filename, text)
+    def test_general_2(self):
+        filename = "test_summary_2.txt"
+        content = "Another summary with numbers: 12345"
+        write_summary_to_txt(filename, content)
         with open(filename, 'r') as f:
-            content = f.read()
-        self.assertEqual(content, text)
+            self.assertEqual(f.read(), content)
         os.remove(filename)
 
-    def test_write_summary_edge_empty_text(self):
-        filename = "test_empty.txt"
-        write_summary_to_txt(filename, "")
+    def test_edge_empty_string(self):
+        filename = "test_summary_empty.txt"
+        content = ""
+        write_summary_to_txt(filename, content)
         with open(filename, 'r') as f:
-            content = f.read()
-        self.assertEqual(content, "")
+            self.assertEqual(f.read(), "")
         os.remove(filename)
 
-    def test_write_summary_edge_invalid_filename(self):
-        filename = "does_not_exist.txt"
-        try:
-            write_summary_to_txt(filename, "text")
-            self.fail("Expected exception not raised")
-        except:
-            pass
+    def test_edge_special_chars(self):
+        filename = "test_summary_special.txt"
+        content = "!@#$%^&*()_+{}:\"<>?"
+        write_summary_to_txt(filename, content)
+        with open(filename, 'r') as f:
+            self.assertEqual(f.read(), content)
+        os.remove(filename)
 
-    #main() --> tests
-    def test_main_normal_case_1(self):
-        mock_csv = "mock_crop_yield_1.csv"
-        with open(mock_csv, 'w') as f:
-            f.write("Region,Crop,Yield_tons_per_hectare,Fertilizer_Used,Days_to_Harvest\n")
-            f.write("North,Wheat,5.2,True,100\n")
-            f.write("South,Wheat,7.1,False,120\n")
-        main()
-        self.assertTrue(os.path.exists("crop_analysis.txt"))
-        with open("crop_analysis.txt", 'r') as f:
-            content = f.read()
-        self.assertIn("Highest Wheat Yield Region", content)
-        self.assertIn("Fertilizer Impact", content)
-        os.remove(mock_csv)
-        os.remove("crop_analysis.txt")
 
-    def test_main_normal_case_2(self):
-        mock_csv = "mock_crop_yield_2.csv"
-        with open(mock_csv, 'w') as f:
-            f.write("Region,Crop,Yield_tons_per_hectare,Fertilizer_Used,Days_to_Harvest\n")
-            f.write("West,Wheat,6.5,True,110\n")
-            f.write("East,Rice,4.0,False,90\n")
-        main()
-        with open("crop_analysis.txt", 'r') as f:
-            content = f.read()
-        self.assertIn("Highest Wheat Yield Region", content)
-        self.assertIn("Fertilizer Impact", content)
-        os.remove(mock_csv)
-        os.remove("crop_analysis.txt")
+class TestMainFunction(unittest.TestCase):
 
-    def test_main_edge_case_no_wheat(self):
-        mock_csv = "mock_crop_yield_no_wheat.csv"
-        with open(mock_csv, 'w') as f:
-            f.write("Region,Crop,Yield_tons_per_hectare,Fertilizer_Used,Days_to_Harvest\n")
-            f.write("East,Rice,4.0,True,90\n")
-        main()
-        with open("crop_analysis.txt", 'r') as f:
-            content = f.read()
-        self.assertIn("Highest Wheat Yield Region: None", content)
-        self.assertIn("Fertilizer Impact", content)
-        os.remove(mock_csv)
-        os.remove("crop_analysis.txt")
+    def setUp(self):
+        self.test_txt = "crop_analysis.txt"
+        self.csv_file = "crop_yield.csv"
 
-    def test_main_edge_case_missing_columns(self):
-        mock_csv = "mock_crop_yield_missing_cols.csv"
-        with open(mock_csv, 'w') as f:
-            f.write("SomeColumn,AnotherColumn\n")
-            f.write("Value1,Value2\n")
+    def tearDown(self):
+        if os.path.exists(self.test_txt):
+            os.remove(self.test_txt)
+
+    def test_main_general_1(self):
+        with open(self.csv_file, 'w') as f:
+            f.write("Crop,Yield_tons_per_hectare,Region,Fertilizer_Used\n")
+            f.write("Wheat,4.0,East,True\n")
+            f.write("Corn,3.0,West,False\n")
         main()
-        with open("crop_analysis.txt", 'r') as f:
+        with open(self.test_txt, 'r') as f:
             content = f.read()
-        self.assertIn("Highest Wheat Yield Region: None", content)
-        self.assertIn("Fertilizer Impact", content)
-        os.remove(mock_csv)
-        os.remove("crop_analysis.txt")
+            self.assertIn("Highest Wheat Yield Region: East", content)
+            self.assertIn("Fertilizer Impact", content)
+
+    def test_main_general_2(self):
+        with open(self.csv_file, 'w') as f:
+            f.write("Crop,Yield_tons_per_hectare,Region,Fertilizer_Used\n")
+            f.write("Wheat,2.0,North,False\n")
+            f.write("Wheat,3.0,South,True\n")
+        main()
+        with open(self.test_txt, 'r') as f:
+            content = f.read()
+            self.assertIn("Highest Wheat Yield Region: South", content)
+            self.assertIn("Fertilizer Impact", content)
+
+    def test_main_edge_empty_file(self):
+        with open(self.csv_file, 'w') as f:
+            f.write("")
+        main()
+        with open(self.test_txt, 'r') as f:
+            content = f.read()
+            self.assertIn("Highest Wheat Yield Region: None", content)
+
+    def test_main_edge_missing_values(self):
+        with open(self.csv_file, 'w') as f:
+            f.write("Crop,Yield_tons_per_hectare,Region,Fertilizer_Used\n")
+            f.write("Wheat,,East,True\n")
+            f.write("Corn,3.0,West,\n")
+        main()
+        with open(self.test_txt, 'r') as f:
+            content = f.read()
+            self.assertIn("Fertilizer Impact", content)
+
 
 if __name__ == "__main__":
     unittest.main()
