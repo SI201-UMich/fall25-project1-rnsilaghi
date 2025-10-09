@@ -1,7 +1,7 @@
 #name: Robert Silaghi
 #student ID: 8712 5192
 #email: silaghi@umich.edu
-#collaborators:
+#collaborators: I used ChatGPT for creating ideas for the test cases, for providing supplemental data for the test cases, for implementing edge cases in load_data, and for structuring how to do test cases for my main function (involved putting the input and output functions as parameters)
 
 import unittest
 import os
@@ -40,26 +40,27 @@ def load_data(filename):
         return header_list, data_list, a_row, count
 
 
-def region_with_highest_ytp_hectare_for_wheat(data_list):
-    max_ytp_wheat_region = None
-    max_ytp_wheat = -float('inf')
+def region_with_highest_temperature_for_wheat(data_list):
+    max_temp_region = None
+    max_temp = -float('inf')
 
     for line in data_list:
         crop = line.get("Crop")
-        ytp_value = line.get("Yield_tons_per_hectare")
+        temp_value = line.get("Temperature_Celsius")
 
-        if crop == "Wheat" and ytp_value is not None:
+        if crop == "Wheat" and temp_value is not None:
             try:
-                ytp = float(ytp_value)
-                if ytp > max_ytp_wheat:
-                    max_ytp_wheat = ytp
-                    max_ytp_wheat_region = line.get("Region")
+                temp = float(temp_value)
+                if temp > max_temp:
+                    max_temp = temp
+                    max_temp_region = line.get("Region")
             except:
                 continue
 
-    if max_ytp_wheat == -float('inf'):
+    if max_temp == -float('inf'):
         return None
-    return max_ytp_wheat_region
+    return max_temp_region
+
 
 
 def fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data_list):
@@ -104,19 +105,17 @@ def write_summary_to_txt(filename, summary_text):
         f.write(summary_text)
 
 
-def main():
-    headers, data_list, a_row, count = load_data("crop_yield.csv")
-
-    highest_region = region_with_highest_ytp_hectare_for_wheat(data_list)
+def main(input_file="crop_yield.csv", output_file="crop_analysis.txt"):
+    headers, data_list, a_row, count = load_data(input_file)
+    highest_region = region_with_highest_temperature_for_wheat(data_list)
     fert_impact = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data_list)
-
-    summary_text = f"Highest Wheat Yield Region: {highest_region}\nFertilizer Impact: {fert_impact}"
-    write_summary_to_txt("crop_analysis.txt", summary_text)
+    summary_text = f"Highest Wheat Temperature Region: {highest_region}\nFertilizer Impact: {fert_impact}"
+    write_summary_to_txt(output_file, summary_text)
 
 
 if __name__ == "__main__":
     main()
-    
+
 
 #Test Cases
 
@@ -162,34 +161,34 @@ class TestLoadData(unittest.TestCase):
         self.assertEqual(count, 0)
 
 
-class TestRegionWithHighestYield(unittest.TestCase):
+class TestRegionWithHighestTemperature(unittest.TestCase):
 
     def test_general_1(self):
         data = [
-            {"Crop": "Wheat", "Yield_tons_per_hectare": "3.5", "Region": "North"},
-            {"Crop": "Wheat", "Yield_tons_per_hectare": "4.2", "Region": "South"},
-            {"Crop": "Corn", "Yield_tons_per_hectare": "5.0", "Region": "East"}
+            {"Crop": "Wheat", "Temperature_Celsius": "25.0", "Region": "North"},
+            {"Crop": "Wheat", "Temperature_Celsius": "31.6", "Region": "South"},
+            {"Crop": "Corn", "Temperature_Celsius": "27.0", "Region": "East"}
         ]
-        self.assertEqual(region_with_highest_ytp_hectare_for_wheat(data), "South")
+        self.assertEqual(region_with_highest_temperature_for_wheat(data), "South")
 
     def test_general_2(self):
         data = [
-            {"Crop": "Wheat", "Yield_tons_per_hectare": "2.0", "Region": "West"},
-            {"Crop": "Wheat", "Yield_tons_per_hectare": "2.5", "Region": "East"}
+            {"Crop": "Wheat", "Temperature_Celsius": "22.0", "Region": "West"},
+            {"Crop": "Wheat", "Temperature_Celsius": "24.5", "Region": "East"}
         ]
-        self.assertEqual(region_with_highest_ytp_hectare_for_wheat(data), "East")
+        self.assertEqual(region_with_highest_temperature_for_wheat(data), "East")
 
     def test_edge_1(self):
         data = [
-            {"Crop": "Corn", "Yield_tons_per_hectare": "5.0", "Region": "North"}
+            {"Crop": "Corn", "Temperature_Celsius": "30.0", "Region": "North"}
         ]
-        self.assertIsNone(region_with_highest_ytp_hectare_for_wheat(data))
+        self.assertIsNone(region_with_highest_temperature_for_wheat(data))
 
     def test_edge_2(self):
         data = [
-            {"Crop": "Wheat", "Yield_tons_per_hectare": None, "Region": "South"}
+            {"Crop": "Wheat", "Temperature_Celsius": None, "Region": "South"}
         ]
-        self.assertIsNone(region_with_highest_ytp_hectare_for_wheat(data))
+        self.assertIsNone(region_with_highest_temperature_for_wheat(data))
 
 
 class TestFertilizerImpact(unittest.TestCase):
@@ -266,51 +265,70 @@ class TestWriteSummary(unittest.TestCase):
 
 class TestMainFunction(unittest.TestCase):
 
-    def setUp(self):
-        self.test_txt = "crop_analysis.txt"
-        self.csv_file = "crop_yield.csv"
-
     def tearDown(self):
-        if os.path.exists(self.test_txt):
-            os.remove(self.test_txt)
+        for file in [
+            "test_temp_1.csv", "test_temp_2.csv",
+            "test_temp_empty.csv", "test_temp_missing.csv",
+            "test_output.txt"
+        ]:
+            if os.path.exists(file):
+                os.remove(file)
 
     def test_main_general_1(self):
-        with open(self.csv_file, 'w') as f:
-            f.write("Crop,Yield_tons_per_hectare,Region,Fertilizer_Used\n")
-            f.write("Wheat,4.0,East,True\n")
-            f.write("Corn,3.0,West,False\n")
-        main()
-        with open(self.test_txt, 'r') as f:
+        test_input = "test_temp_1.csv"
+        test_output = "test_output.txt"
+        with open(test_input, 'w') as f:
+            f.write("Crop,Temperature_Celsius,Region,Fertilizer_Used\n")
+            f.write("Wheat,28.5,East,True\n")
+            f.write("Corn,25.0,West,False\n")
+
+        main(test_input, test_output)
+
+        with open(test_output, 'r') as f:
             content = f.read()
-            self.assertIn("Highest Wheat Yield Region: East", content)
+            self.assertIn("Highest Wheat Temperature Region: East", content)
             self.assertIn("Fertilizer Impact", content)
 
     def test_main_general_2(self):
-        with open(self.csv_file, 'w') as f:
-            f.write("Crop,Yield_tons_per_hectare,Region,Fertilizer_Used\n")
-            f.write("Wheat,2.0,North,False\n")
-            f.write("Wheat,3.0,South,True\n")
-        main()
-        with open(self.test_txt, 'r') as f:
+        test_input = "test_temp_2.csv"
+        test_output = "test_output.txt"
+        with open(test_input, 'w') as f:
+            f.write("Crop,Temperature_Celsius,Region,Fertilizer_Used\n")
+            f.write("Wheat,26.0,North,False\n")
+            f.write("Wheat,30.2,South,True\n")
+
+        main(test_input, test_output)
+
+        with open(test_output, 'r') as f:
             content = f.read()
-            self.assertIn("Highest Wheat Yield Region: South", content)
+            self.assertIn("Highest Wheat Temperature Region: South", content)
             self.assertIn("Fertilizer Impact", content)
 
     def test_main_edge_empty_file(self):
-        with open(self.csv_file, 'w') as f:
+        test_input = "test_temp_empty.csv"
+        test_output = "test_output.txt"
+        with open(test_input, 'w') as f:
             f.write("")
-        main()
-        with open(self.test_txt, 'r') as f:
+
+        main(test_input, test_output)
+
+        with open(test_output, 'r') as f:
             content = f.read()
-            self.assertIn("Highest Wheat Yield Region: None", content)
+            self.assertIn("Highest Wheat Temperature Region: None", content)
+            self.assertIn("'With_Fert': None", content)
+            self.assertIn("'Without_Fert': None", content)
 
     def test_main_edge_missing_values(self):
-        with open(self.csv_file, 'w') as f:
-            f.write("Crop,Yield_tons_per_hectare,Region,Fertilizer_Used\n")
+        test_input = "test_temp_missing.csv"
+        test_output = "test_output.txt"
+        with open(test_input, 'w') as f:
+            f.write("Crop,Temperature_Celsius,Region,Fertilizer_Used\n")
             f.write("Wheat,,East,True\n")
-            f.write("Corn,3.0,West,\n")
-        main()
-        with open(self.test_txt, 'r') as f:
+            f.write("Corn,25.0,West,\n")
+
+        main(test_input, test_output)
+
+        with open(test_output, 'r') as f:
             content = f.read()
             self.assertIn("Fertilizer Impact", content)
 
