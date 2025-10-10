@@ -6,7 +6,6 @@
 import unittest
 import os
 
-
 def load_data(filename):
     
     with open(filename, 'r') as fhand:
