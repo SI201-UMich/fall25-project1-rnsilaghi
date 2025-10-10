@@ -1,7 +1,8 @@
 #name: Robert Silaghi
 #student ID: 8712 5192
 #email: silaghi@umich.edu
-#collaborators: Did not have a partner. Phu Le helped me to better understand how to approach the unittests. I used ChatGPT for creating ideas for the test cases, for providing supplemental data for the test cases, for implementing edge cases in load_data, and for structuring how to do test cases for my main function (involved putting the input and output functions as parameters)
+#collaborators: I did not have a partner. Phu Le helped me to better understand how to approach the unittests. 
+# I used ChatGPT for creating ideas for the test cases, for understanding how to work with os, for providing supplemental data for the test cases, for implementing edge cases in load_data, and for structuring how to do test cases for my main function (involved putting the input and output functions as parameters in main)
 
 import unittest
 import os
@@ -40,7 +41,7 @@ def load_data(filename):
         return header_list, data_list, a_row, count
 
 
-def region_with_highest_temperature_for_wheat(data_list):
+def wheat_region_with_highest_temp(data_list):
     max_temp_region = None
     max_temp = -float('inf')
 
@@ -63,7 +64,7 @@ def region_with_highest_temperature_for_wheat(data_list):
 
 
 
-def fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data_list):
+def fertilizer_impact(data_list):
     with_fert_yields = []
     without_fert_yields = []
 
@@ -107,8 +108,8 @@ def write_summary_to_txt(filename, summary_text):
 
 def main(input_file="crop_yield.csv", output_file="crop_analysis.txt"):
     headers, data_list, a_row, count = load_data(input_file)
-    highest_region = region_with_highest_temperature_for_wheat(data_list)
-    fert_impact = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data_list)
+    highest_region = wheat_region_with_highest_temp(data_list)
+    fert_impact = fertilizer_impact(data_list)
     summary_text = f"Highest Wheat Temperature Region: {highest_region}\nFertilizer Impact: {fert_impact}"
     write_summary_to_txt(output_file, summary_text)
 
@@ -169,26 +170,26 @@ class TestRegionWithHighestTemperature(unittest.TestCase):
             {"Crop": "Wheat", "Temperature_Celsius": "31.6", "Region": "South"},
             {"Crop": "Corn", "Temperature_Celsius": "27.0", "Region": "East"}
         ]
-        self.assertEqual(region_with_highest_temperature_for_wheat(data), "South")
+        self.assertEqual(wheat_region_with_highest_temp(data), "South")
 
     def test_general_2(self):
         data = [
             {"Crop": "Wheat", "Temperature_Celsius": "22.0", "Region": "West"},
             {"Crop": "Wheat", "Temperature_Celsius": "24.5", "Region": "East"}
         ]
-        self.assertEqual(region_with_highest_temperature_for_wheat(data), "East")
+        self.assertEqual(wheat_region_with_highest_temp(data), "East")
 
     def test_edge_1(self):
         data = [
             {"Crop": "Corn", "Temperature_Celsius": "30.0", "Region": "North"}
         ]
-        self.assertIsNone(region_with_highest_temperature_for_wheat(data))
+        self.assertIsNone(wheat_region_with_highest_temp(data))
 
     def test_edge_2(self):
         data = [
             {"Crop": "Wheat", "Temperature_Celsius": None, "Region": "South"}
         ]
-        self.assertIsNone(region_with_highest_temperature_for_wheat(data))
+        self.assertIsNone(wheat_region_with_highest_temp(data))
 
 
 class TestFertilizerImpact(unittest.TestCase):
@@ -198,7 +199,7 @@ class TestFertilizerImpact(unittest.TestCase):
             {"Yield_tons_per_hectare": "3.0", "Fertilizer_Used": "True"},
             {"Yield_tons_per_hectare": "2.0", "Fertilizer_Used": "False"}
         ]
-        result = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data)
+        result = fertilizer_impact(data)
         self.assertEqual(result["With_Fert"], 3.0)
         self.assertEqual(result["Without_Fert"], 2.0)
 
@@ -208,7 +209,7 @@ class TestFertilizerImpact(unittest.TestCase):
             {"Yield_tons_per_hectare": "2.0", "Fertilizer_Used": "False"},
             {"Yield_tons_per_hectare": "3.0", "Fertilizer_Used": "False"}
         ]
-        result = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data)
+        result = fertilizer_impact(data)
         self.assertEqual(result["With_Fert"], 4.0)
         self.assertEqual(result["Without_Fert"], 2.5)
 
@@ -217,13 +218,13 @@ class TestFertilizerImpact(unittest.TestCase):
             {"Yield_tons_per_hectare": "3.0", "Fertilizer_Used": "True"},
             {"Yield_tons_per_hectare": None, "Fertilizer_Used": "False"}
         ]
-        result = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data)
+        result = fertilizer_impact(data)
         self.assertEqual(result["With_Fert"], 3.0)
         self.assertIsNone(result["Without_Fert"])
 
     def test_edge_2(self):
         data = []
-        result = fert_vs_no_fert_impact_on_dt_harvest_and_ytp_hectare(data)
+        result = fertilizer_impact(data)
         self.assertIsNone(result["With_Fert"])
         self.assertIsNone(result["Without_Fert"])
 
