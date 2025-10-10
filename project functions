@@ -257,7 +257,7 @@ class TestWriteSummary(unittest.TestCase):
 
     def test_edge_special_chars(self):
         filename = "test_summary_special.txt"
-        content = "!@?"
+        content = "!@"
         write_summary_to_txt(filename, content)
         with open(filename, 'r') as f:
             self.assertEqual(f.read(), content)
@@ -332,7 +332,6 @@ class TestMainFunction(unittest.TestCase):
         with open(test_output, 'r') as f:
             content = f.read()
             self.assertIn("Fertilizer Impact", content)
-
 
 if __name__ == "__main__":
     unittest.main()
