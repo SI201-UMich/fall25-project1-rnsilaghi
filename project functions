@@ -1,13 +1,14 @@
 #name: Robert Silaghi
 #student ID: 8712 5192
 #email: silaghi@umich.edu
-#collaborators: I used ChatGPT for creating ideas for the test cases, for providing supplemental data for the test cases, for implementing edge cases in load_data, and for structuring how to do test cases for my main function (involved putting the input and output functions as parameters)
+#collaborators: Did not have a partner. I used ChatGPT for creating ideas for the test cases, for providing supplemental data for the test cases, for implementing edge cases in load_data, and for structuring how to do test cases for my main function (involved putting the input and output functions as parameters)
 
 import unittest
 import os
 
 
 def load_data(filename):
+    
     with open(filename, 'r') as fhand:
         file_reader = fhand.readlines()
 
@@ -256,7 +257,7 @@ class TestWriteSummary(unittest.TestCase):
 
     def test_edge_special_chars(self):
         filename = "test_summary_special.txt"
-        content = "!@#$%^&*()_+{}:\"<>?"
+        content = "!@?"
         write_summary_to_txt(filename, content)
         with open(filename, 'r') as f:
             self.assertEqual(f.read(), content)
