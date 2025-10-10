@@ -1,2 +1,0 @@
-Highest Wheat Temperature Region: North
-Fertilizer Impact: {'With_Fert': 5.3996, 'Without_Fert': 3.8995}
