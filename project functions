@@ -67,10 +67,13 @@ def wheat_region_with_highest_temp(data_list):
 def fertilizer_impact(data_list):
     with_fert_yields = []
     without_fert_yields = []
+    with_fert_days = []
+    without_fert_days = []
 
     for row in data_list:
         ytp_value = row.get("Yield_tons_per_hectare")
         fert_value = row.get("Fertilizer_Used")
+        days_value = row.get("Days_to_Harvest")
 
         if ytp_value is None or fert_value is None:
             continue
@@ -83,20 +86,41 @@ def fertilizer_impact(data_list):
                 with_fert_yields.append(ytp)
             else:
                 without_fert_yields.append(ytp)
+
+            try:
+                days = int(float(days_value))
+                if fert_used:
+                    with_fert_days.append(days)
+                else:
+                    without_fert_days.append(days)
+            except:
+                pass  
         except:
-            continue
+            continue 
 
     result = {}
 
+    # Yield averages
     if with_fert_yields:
-        result["With_Fert"] = round(sum(with_fert_yields) / len(with_fert_yields), 4)
+        result["Yield_With_Fert"] = round(sum(with_fert_yields) / len(with_fert_yields), 4)
     else:
-        result["With_Fert"] = None
+        result["Yield_With_Fert"] = None
 
     if without_fert_yields:
-        result["Without_Fert"] = round(sum(without_fert_yields) / len(without_fert_yields), 4)
+        result["Yield_Without_Fert"] = round(sum(without_fert_yields) / len(without_fert_yields), 4)
     else:
-        result["Without_Fert"] = None
+        result["Yield_Without_Fert"] = None
+
+    # Days to harvest averages
+    if with_fert_days:
+        result["Harvest_Days_With_Fert"] = round(sum(with_fert_days) / len(with_fert_days), 2)
+    else:
+        result["Harvest_Days_With_Fert"] = None
+
+    if without_fert_days:
+        result["Harvest_Days_Without_Fert"] = round(sum(without_fert_days) / len(without_fert_days), 2)
+    else:
+        result["Harvest_Days_Without_Fert"] = None
 
     return result
 
@@ -197,37 +221,45 @@ class TestFertilizerImpact(unittest.TestCase):
 
     def test_general_1(self):
         data = [
-            {"Yield_tons_per_hectare": "3.0", "Fertilizer_Used": "True"},
-            {"Yield_tons_per_hectare": "2.0", "Fertilizer_Used": "False"}
+            {"Yield_tons_per_hectare": "3.0", "Fertilizer_Used": "True", "Days_to_Harvest": "120"},
+            {"Yield_tons_per_hectare": "2.0", "Fertilizer_Used": "False", "Days_to_Harvest": "130"}
         ]
         result = fertilizer_impact(data)
-        self.assertEqual(result["With_Fert"], 3.0)
-        self.assertEqual(result["Without_Fert"], 2.0)
+        self.assertEqual(result["Yield_With_Fert"], 3.0)
+        self.assertEqual(result["Yield_Without_Fert"], 2.0)
+        self.assertEqual(result["Harvest_Days_With_Fert"], 120)
+        self.assertEqual(result["Harvest_Days_Without_Fert"], 130)
 
     def test_general_2(self):
         data = [
-            {"Yield_tons_per_hectare": "4.0", "Fertilizer_Used": "True"},
-            {"Yield_tons_per_hectare": "2.0", "Fertilizer_Used": "False"},
-            {"Yield_tons_per_hectare": "3.0", "Fertilizer_Used": "False"}
+            {"Yield_tons_per_hectare": "4.0", "Fertilizer_Used": "True", "Days_to_Harvest": "110"},
+            {"Yield_tons_per_hectare": "2.0", "Fertilizer_Used": "False", "Days_to_Harvest": "140"},
+            {"Yield_tons_per_hectare": "3.0", "Fertilizer_Used": "False", "Days_to_Harvest": "150"}
         ]
         result = fertilizer_impact(data)
-        self.assertEqual(result["With_Fert"], 4.0)
-        self.assertEqual(result["Without_Fert"], 2.5)
+        self.assertEqual(result["Yield_With_Fert"], 4.0)
+        self.assertEqual(result["Yield_Without_Fert"], 2.5)
+        self.assertEqual(result["Harvest_Days_With_Fert"], 110)
+        self.assertEqual(result["Harvest_Days_Without_Fert"], 145.0)
 
     def test_edge_1(self):
         data = [
-            {"Yield_tons_per_hectare": "3.0", "Fertilizer_Used": "True"},
-            {"Yield_tons_per_hectare": None, "Fertilizer_Used": "False"}
+            {"Yield_tons_per_hectare": "3.0", "Fertilizer_Used": "True", "Days_to_Harvest": "125"},
+            {"Yield_tons_per_hectare": None, "Fertilizer_Used": "False", "Days_to_Harvest": "135"}
         ]
         result = fertilizer_impact(data)
-        self.assertEqual(result["With_Fert"], 3.0)
-        self.assertIsNone(result["Without_Fert"])
+        self.assertEqual(result["Yield_With_Fert"], 3.0)
+        self.assertIsNone(result["Yield_Without_Fert"])
+        self.assertEqual(result["Harvest_Days_With_Fert"], 125)
+        self.assertIsNone(result["Harvest_Days_Without_Fert"])
 
     def test_edge_2(self):
         data = []
         result = fertilizer_impact(data)
-        self.assertIsNone(result["With_Fert"])
-        self.assertIsNone(result["Without_Fert"])
+        self.assertIsNone(result["Yield_With_Fert"])
+        self.assertIsNone(result["Yield_Without_Fert"])
+        self.assertIsNone(result["Harvest_Days_With_Fert"])
+        self.assertIsNone(result["Harvest_Days_Without_Fert"])
 
 
 class TestWriteSummary(unittest.TestCase):
@@ -280,31 +312,37 @@ class TestMainFunction(unittest.TestCase):
         test_input = "test_temp_1.csv"
         test_output = "test_output.txt"
         with open(test_input, 'w') as f:
-            f.write("Crop,Temperature_Celsius,Region,Fertilizer_Used\n")
-            f.write("Wheat,28.5,East,True\n")
-            f.write("Corn,25.0,West,False\n")
+            f.write("Crop,Temperature_Celsius,Region,Fertilizer_Used,Days_to_Harvest,Yield_tons_per_hectare\n")
+            f.write("Wheat,28.5,East,True,120,3.0\n")
+            f.write("Corn,25.0,West,False,130,2.0\n")
 
         main(test_input, test_output)
 
         with open(test_output, 'r') as f:
             content = f.read()
             self.assertIn("Highest Wheat Temperature Region: East", content)
-            self.assertIn("Fertilizer Impact", content)
+            self.assertIn("'Yield_With_Fert': 3.0", content)
+            self.assertIn("'Yield_Without_Fert': 2.0", content)
+            self.assertIn("'Harvest_Days_With_Fert': 120", content)
+            self.assertIn("'Harvest_Days_Without_Fert': 130", content)
 
     def test_main_general_2(self):
         test_input = "test_temp_2.csv"
         test_output = "test_output.txt"
         with open(test_input, 'w') as f:
-            f.write("Crop,Temperature_Celsius,Region,Fertilizer_Used\n")
-            f.write("Wheat,26.0,North,False\n")
-            f.write("Wheat,30.2,South,True\n")
+            f.write("Crop,Temperature_Celsius,Region,Fertilizer_Used,Days_to_Harvest,Yield_tons_per_hectare\n")
+            f.write("Wheat,26.0,North,False,140,2.0\n")
+            f.write("Wheat,30.2,South,True,110,4.0\n")
 
         main(test_input, test_output)
 
         with open(test_output, 'r') as f:
             content = f.read()
             self.assertIn("Highest Wheat Temperature Region: South", content)
-            self.assertIn("Fertilizer Impact", content)
+            self.assertIn("'Yield_With_Fert': 4.0", content)
+            self.assertIn("'Yield_Without_Fert': 2.0", content)
+            self.assertIn("'Harvest_Days_With_Fert': 110", content)
+            self.assertIn("'Harvest_Days_Without_Fert': 140", content)
 
     def test_main_edge_empty_file(self):
         test_input = "test_temp_empty.csv"
@@ -317,22 +355,28 @@ class TestMainFunction(unittest.TestCase):
         with open(test_output, 'r') as f:
             content = f.read()
             self.assertIn("Highest Wheat Temperature Region: None", content)
-            self.assertIn("'With_Fert': None", content)
-            self.assertIn("'Without_Fert': None", content)
+            self.assertIn("'Yield_With_Fert': None", content)
+            self.assertIn("'Yield_Without_Fert': None", content)
+            self.assertIn("'Harvest_Days_With_Fert': None", content)
+            self.assertIn("'Harvest_Days_Without_Fert': None", content)
 
     def test_main_edge_missing_values(self):
         test_input = "test_temp_missing.csv"
         test_output = "test_output.txt"
         with open(test_input, 'w') as f:
-            f.write("Crop,Temperature_Celsius,Region,Fertilizer_Used\n")
-            f.write("Wheat,,East,True\n")
-            f.write("Corn,25.0,West,\n")
+            f.write("Crop,Temperature_Celsius,Region,Fertilizer_Used,Days_to_Harvest,Yield_tons_per_hectare\n")
+            f.write("Wheat,,East,True,125,3.0\n")
+            f.write("Corn,25.0,West,,135,\n")
 
         main(test_input, test_output)
 
         with open(test_output, 'r') as f:
             content = f.read()
             self.assertIn("Fertilizer Impact", content)
+            self.assertIn("'Yield_With_Fert': 3.0", content)
+            self.assertIn("'Yield_Without_Fert': None", content)
+            self.assertIn("'Harvest_Days_With_Fert': 125", content)
+            self.assertIn("'Harvest_Days_Without_Fert': None", content)
 
 if __name__ == "__main__":
     unittest.main()
