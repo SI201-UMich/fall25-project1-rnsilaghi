@@ -1,7 +1,7 @@
 #name: Robert Silaghi
 #student ID: 8712 5192
 #email: silaghi@umich.edu
-#collaborators: Did not have a partner. I used ChatGPT for creating ideas for the test cases, for providing supplemental data for the test cases, for implementing edge cases in load_data, and for structuring how to do test cases for my main function (involved putting the input and output functions as parameters)
+#collaborators: Did not have a partner. Phu Le helped me to better understand how to approach the unittests. I used ChatGPT for creating ideas for the test cases, for providing supplemental data for the test cases, for implementing edge cases in load_data, and for structuring how to do test cases for my main function (involved putting the input and output functions as parameters)
 
 import unittest
 import os
